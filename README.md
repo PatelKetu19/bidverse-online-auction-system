@@ -127,7 +127,7 @@ git clone https://github.com/PatelKetu19/bidverse-online-auction-system.git
 ### 2. Open Project
 
 ```bash
-cd bidverse-online-auction-system/server
+cd bidverse-online-auction-system-main/server
 ```
 
 ### 3. Install Dependencies

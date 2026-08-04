@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html ng-app="auctionApp">
+<head>
+    <title>Register</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
+    <style>
+        body { font-family: Arial; background-color: #e6f2ff; }
+        .container {
+            width: 350px; margin: 80px auto; padding: 20px;
+            background: white; border-radius: 10px; box-shadow: 0 0 10px #aaa;
+        }
+        input, select, button {
+            width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box;
+        }
+        button { background: green; color: white; border: none; cursor: pointer; }
+        button:hover { background: darkgreen; }
+        button:disabled { background: gray; cursor: not-allowed; }
+        p { color: red; font-size: 14px; margin: 0; }
+        a {
+            display: block; text-align: center; margin-top: 10px;
+            text-decoration: none; color: #333;
+        }
+    </style>
+</head>
+
+<body ng-controller="registerCtrl">
+
+<div class="container">
+    <h2>Register</h2>
+
+    <form name="registerForm" novalidate>
+
+        <!-- Name -->
+        <input type="text" name="name" placeholder="Name"
+               ng-model="user.name" required>
+
+        <p ng-show="registerForm.name.$touched && registerForm.name.$invalid">
+            Name is required
+        </p>
+
+        <!-- Email -->
+        <input type="email" name="email" placeholder="Email"
+               ng-model="user.email" required>
+
+        <p ng-show="registerForm.email.$touched && registerForm.email.$invalid">
+            Enter a valid email address
+        </p>
+
+        <!-- Password -->
+        <input type="password" name="password" placeholder="Password"
+               ng-model="user.password"
+               ng-pattern="/^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/"
+               required>
+
+        <p ng-show="registerForm.password.$touched && registerForm.password.$error.required">
+            Password is required
+        </p>
+
+        <p ng-show="registerForm.password.$touched && registerForm.password.$error.pattern">
+            Password must be at least 8 characters, include 1 number and 1 special character
+        </p>
+
+        <!-- Role -->
+        <select name="role" ng-model="user.role" required>
+            <option value="">Select Role</option>
+            <option value="buyer">Buyer</option>
+            <option value="seller">Seller</option>
+
+        </select>
+
+        <p ng-show="registerForm.role.$touched && registerForm.role.$invalid">
+            Please select a role
+        </p>
+
+        <!-- Submit -->
+        <button ng-click="register()" ng-disabled="registerForm.$invalid">
+            Register
+        </button>
+
+    </form>
+
+    <!-- Message -->
+    <p ng-style="{'color': messageColor}">{{message}}</p>
+
+    <a href="login.html">Back to Login</a>
+</div>
+
+<script>
+    var app = angular.module("auctionApp", []);
+
+    app.controller("registerCtrl", function($scope, $http) {
+
+        $scope.user = {};
+
+        $scope.register = function() {
+
+            if ($scope.registerForm.$invalid) {
+                $scope.message = "Please fix validation errors";
+                $scope.messageColor = "red";
+                return;
+            }
+
+            $http.post("http://localhost:3000/auth/register", $scope.user)
+            .then(function(res) {
+                $scope.message = res.data.message;
+                $scope.messageColor = "green";
+
+                // Reset form
+                $scope.user = {};
+                $scope.registerForm.$setPristine();
+                $scope.registerForm.$setUntouched();
+
+            }, function(err) {
+                $scope.message = err.data && err.data.message
+                    ? err.data.message
+                    : "Server error";
+                $scope.messageColor = "red";
+            });
+        };
+    });
+</script>
+
+</body>
+</html>

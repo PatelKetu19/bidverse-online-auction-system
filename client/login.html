@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html ng-app="auctionApp">
+<head>
+    <title>Login — Auction System</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { width: 360px; background: white; border-radius: 12px; padding: 36px 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 24px; color: #333; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 14px; font-size: 14px; }
+        button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        .msg { text-align: center; margin-top: 12px; font-size: 14px; padding: 8px; border-radius: 6px; }
+        .msg-error { background: #f8d7da; color: #721c24; }
+        a { display: block; text-align: center; margin-top: 16px; color: #3498db; font-size: 14px; }
+    </style>
+</head>
+<body ng-controller="loginCtrl">
+<div class="card">
+    <h2>🔑 Login</h2>
+    <input type="email" placeholder="Email" ng-model="user.email">
+    <input type="password" placeholder="Password" ng-model="user.password">
+    <button ng-click="login()">Login</button>
+    <div class="msg msg-error" ng-if="message">{{message}}</div>
+    <a href="register.html">Don't have an account? Register</a>
+</div>
+<script>
+var app = angular.module("auctionApp", []);
+app.controller("loginCtrl", function($scope, $http) {
+    $scope.login = function() {
+        $scope.message = '';
+        if (!$scope.user || !$scope.user.email || !$scope.user.password) {
+            $scope.message = "Please enter email and password.";
+            return;
+        }
+        $http.post("http://localhost:3000/auth/login", $scope.user)
+        .then(function(res) {
+            localStorage.setItem("user", JSON.stringify(res.data.user));
+            var role = res.data.role;
+            if (role === "buyer")  window.location.href = "buyer.html";
+            else if (role === "seller") window.location.href = "seller.html";
+            else if (role === "admin")  window.location.href = "admin.html";
+        }, function(err) {
+            $scope.message = err.data && err.data.message ? err.data.message : "Login failed. Please try again.";
+        });
+    };
+});
+</script>
+</body>
+</html>

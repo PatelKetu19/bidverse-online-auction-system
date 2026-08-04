@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html ng-app="auctionApp">
+<head>
+<title>Buyer — Live Auctions</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh}
+/* topbar */
+.topbar{background:#27ae60;color:#fff;padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
+.topbar h1{font-size:19px}
+.logout-btn{background:#fff;color:#27ae60;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-weight:700}
+/* name banner */
+.name-banner{background:#eafaf1;border-bottom:2px solid #a9dfbf;padding:10px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.name-banner label{font-size:13px;font-weight:700;color:#1a5c38}
+.name-banner input{padding:8px 12px;border:1.5px solid #a9dfbf;border-radius:6px;font-size:14px;width:220px;outline:none}
+.name-banner input:focus{border-color:#27ae60}
+.name-banner .hint{font-size:12px;color:#7dcea0}
+/* tabs */
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e0e0e0;padding:0 28px;overflow-x:auto}
+.tab{padding:13px 20px;cursor:pointer;font-weight:700;color:#888;border-bottom:3px solid transparent;transition:.15s;white-space:nowrap}
+.tab.active{color:#27ae60;border-bottom-color:#27ae60}
+/* layout */
+.container{padding:22px 28px;max-width:960px;margin:0 auto}
+.sec-title{font-size:17px;font-weight:700;color:#333;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.sec-title small{font-size:13px;font-weight:400;color:#888}
+/* counter cards */
+.counter-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.counter-card{background:#fff;border-radius:10px;padding:16px 20px;flex:1;min-width:120px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #ccc}
+.counter-card.c-live  {border-top-color:#27ae60}
+.counter-card.c-buyers{border-top-color:#2980b9}
+.counter-card.c-total {border-top-color:#e67e22}
+.counter-card.c-seller{border-top-color:#8e44ad}
+.counter-num{font-size:28px;font-weight:900;line-height:1;color:#222}
+.counter-lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+/* search */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:10px 16px 10px 40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border .2s}
+.search-wrap input:focus{border-color:#27ae60}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#bbb;font-size:15px;pointer-events:none}
+.result-count{font-size:12px;color:#888;margin-bottom:10px;font-style:italic}
+/* ── BROWSE CARD (compact listing view) ── */
+.browse-card{background:#fff;border-radius:10px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;align-items:center;gap:14px;cursor:default}
+.browse-thumb{width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #eee;flex-shrink:0}
+.no-img-thumb{width:60px;height:60px;background:#f0f2f5;border-radius:8px;border:1px solid #eee;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px}
+.browse-info{flex:1;min-width:0}
+.browse-name{font-size:16px;font-weight:700;color:#222;margin-bottom:6px}
+.browse-meta{display:flex;gap:10px;flex-wrap:wrap}
+.bmeta-cell{background:#f8f9fa;border-radius:5px;padding:4px 9px;font-size:12px}
+.bmeta-cell .bl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.3px}
+.bmeta-cell .bv{font-weight:700;color:#222;font-size:13px}
+.bmeta-cell .bv.red{color:#c0392b}
+.btn-bid-now{background:#27ae60;color:#fff;border:none;border-radius:7px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.btn-bid-now:hover{background:#1e8449}
+/* ── BID SECTION (expanded bid view) ── */
+.back-btn{background:none;border:none;color:#27ae60;font-size:14px;font-weight:700;cursor:pointer;padding:0;margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.back-btn:hover{text-decoration:underline}
+.pcard{background:#fff;border-radius:10px;padding:20px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.pcard-name{font-size:18px;font-weight:700;color:#222;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.pcard-img{width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #eee}
+.no-img-pcard{width:90px;height:90px;background:#f0f2f5;border-radius:8px;border:1px solid #eee;display:flex;align-items:center;justify-content:center;font-size:32px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px;margin-bottom:14px}
+.info-cell{background:#f8f9fa;border-radius:6px;padding:7px 10px}
+.lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.val{font-size:15px;font-weight:700;color:#222}
+.val-red{color:#c0392b}
+/* big countdown */
+.big-timer{text-align:center;padding:14px 10px;border-radius:10px;margin:0 0 14px;transition:background .3s,border .3s}
+.t-live  {background:#eafaf1;border:2px solid #27ae60}
+.t-warn  {background:#fef9e7;border:2px solid #f39c12}
+.t-urgent{background:#fdedec;border:2px solid #e74c3c;animation:pulse .6s infinite alternate}
+.t-wait  {background:#f8f9fa;border:2px dashed #bbb}
+.t-ended {background:#f8d7da;border:2px solid #c0392b}
+@keyframes pulse{from{opacity:1}to{opacity:.7}}
+.t-label {font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.t-digits{font-size:42px;font-weight:900;letter-spacing:2px;line-height:1}
+.t-sub   {font-size:12px;color:#888;margin-top:4px}
+/* bid form */
+.bid-form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.bid-form input{flex:1;min-width:140px;padding:11px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.bid-form input.err{border-color:#e74c3c}
+.bid-form input[readonly]{background:#f8f9fa;color:#555;cursor:default}
+.btn-bid{padding:11px 22px;background:#27ae60;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-bid:hover{background:#1e8449}
+.btn-bid:disabled{background:#aaa;cursor:not-allowed}
+.msg{margin-top:8px;font-size:13px;padding:9px 13px;border-radius:6px;font-weight:700}
+.msg-ok {background:#d4edda;color:#155724}
+.msg-err{background:#f8d7da;color:#721c24}
+/* bid history */
+hr.div{border:none;border-top:1px solid #eee;margin:14px 0}
+.bh-title{font-size:12px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
+.bh-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 6px;border-bottom:1px solid #f5f5f5;border-radius:4px}
+.bh-row:last-child{border-bottom:none}
+.bh-row.top{font-weight:700;color:#e67e22}
+.bh-row.mine{background:#eafaf1}
+.no-bids{font-size:13px;color:#bbb;font-style:italic}
+/* previous auctions */
+.prev-card{background:#fff;border-radius:10px;padding:18px 20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid #bbb}
+.prev-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.prev-name{font-size:16px;font-weight:700;color:#222}
+.closed-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#e2e3e5;color:#383d41}
+.prev-info{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#555;margin-bottom:10px}
+.prev-info b{color:#222}
+.winner-strip{background:#d4edda;border:1px solid #b8dfc5;border-radius:7px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#155724}
+.winner-strip.no-bid{background:#fff3cd;border-color:#ffc107;color:#856404}
+.participants-title{font-size:12px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.p-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 6px;border-bottom:1px solid #f5f5f5;border-radius:4px}
+.p-row:last-child{border-bottom:none}
+.p-row.winner-row{background:#d4edda;font-weight:700;color:#155724}
+.p-row.my-row{background:#eafaf1}
+/* my biddings */
+.mybid-card{background:#fff;border-radius:10px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:5px solid #bbb}
+.mybid-card.won {border-left-color:#27ae60;background:#f0fff4}
+.mybid-card.live{border-left-color:#3498db;background:#f0f8ff}
+.mybid-card.lost{border-left-color:#bbb}
+.mybid-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.mybid-name{font-size:15px;font-weight:700;color:#222}
+.mbadge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.mb-won {background:#d4edda;color:#155724}
+.mb-live{background:#cce5ff;color:#004085}
+.mb-lost{background:#e2e3e5;color:#555}
+.mybid-info{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#555;margin-bottom:6px}
+.mybid-info b{color:#222}
+.won-banner{background:#d4edda;border-radius:7px;padding:8px 14px;font-size:14px;font-weight:700;color:#155724;margin-top:6px}
+.lost-note{font-size:12px;color:#888;margin-top:4px}
+.empty{text-align:center;color:#bbb;padding:50px;font-size:15px}
+/* upcoming auction card */
+.upcoming-card{background:#fff;border-radius:10px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;align-items:center;gap:14px;border-left:4px solid #8e44ad}
+.upcoming-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#ede0f7;color:#6c3483;margin-bottom:6px}
+.upcoming-countdown{background:#f5eef8;border:2px solid #8e44ad;border-radius:10px;padding:10px 18px;text-align:center;min-width:120px;flex-shrink:0}
+.uc-label{font-size:10px;color:#8e44ad;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.uc-digits{font-size:26px;font-weight:900;color:#6c3483;line-height:1.1}
+.uc-sub{font-size:10px;color:#aaa;margin-top:2px}
+.t-upcoming{background:#f5eef8;border:2px solid #8e44ad}
+.c-upcoming{border-top-color:#8e44ad}
+/* sold popup */
+.sold-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:999;justify-content:center;align-items:center}
+.sold-overlay.show{display:flex}
+.sold-box{background:#fff;border-radius:18px;padding:40px 52px;text-align:center;box-shadow:0 14px 48px rgba(0,0,0,.3);min-width:300px;animation:popin .3s ease}
+@keyframes popin{from{transform:scale(.65);opacity:0}to{transform:scale(1);opacity:1}}
+.sp-product{font-size:14px;color:#888;margin-bottom:4px}
+.sp-amount {font-size:44px;font-weight:900;color:#c0392b;margin-bottom:8px}
+.sp-count  {font-size:88px;font-weight:900;line-height:1;margin:6px 0}
+.sp-count.c3{color:#f1c40f} .sp-count.c2{color:#e67e22} .sp-count.c1{color:#e74c3c}
+.sp-going  {font-size:15px;color:#888;margin-top:4px}
+.sp-emoji  {font-size:52px;margin-bottom:4px}
+.sp-sold-to{font-size:18px;font-weight:700;color:#155724}
+.sp-winner {font-size:28px;font-weight:900;color:#27ae60;margin-top:2px}
+.sp-you-won{font-size:14px;background:#d4edda;color:#155724;border-radius:8px;padding:8px 16px;margin-top:10px;display:inline-block;font-weight:700}
+</style>
+</head>
+<body ng-controller="buyerCtrl">
+
+<!-- SOLD popup -->
+<div class="sold-overlay" ng-class="{show: popup.show}">
+  <div class="sold-box">
+    <div class="sp-product">🔨 {{popup.productName}}</div>
+    <div class="sp-amount">₹{{popup.amount}}</div>
+    <div ng-if="popup.phase==='counting'">
+      <div class="sp-count" ng-class="{'c3':popup.count===3,'c2':popup.count===2,'c1':popup.count===1}">{{popup.count}}</div>
+      <div class="sp-going">Going… going…</div>
+    </div>
+    <div ng-if="popup.phase==='sold'">
+      <div class="sp-emoji">🎉</div>
+      <div class="sp-sold-to">SOLD to</div>
+      <div class="sp-winner">{{popup.winner}}</div>
+      <div class="sp-you-won" ng-if="popup.isYou">🏆 You won this auction!</div>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <h1>🛒 Live Auctions &nbsp;<small style="font-size:13px;opacity:.85">Welcome, {{buyerName}}</small></h1>
+  <button class="logout-btn" ng-click="logout()">Logout</button>
+</div>
+
+<div class="name-banner">
+  <label>Your Bidding Name:</label>
+  <input type="text" ng-model="globalName" ng-change="saveGlobalName()" placeholder="Enter your name once…">
+  <span class="hint">✅ Auto-filled in every bid form below</span>
+</div>
+
+<div class="tabs">
+  <div class="tab" ng-class="{active: tab==='live'}"     ng-click="goLiveBrowse()">🔴 Live Auctions <span ng-if="activeLiveCount()>0" style="background:#e74c3c;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px">{{activeLiveCount()}}</span></div>
+  <div class="tab" ng-class="{active: tab==='upcoming'}" ng-click="tab='upcoming'">🕐 Upcoming <span ng-if="upcomingProducts.length>0" style="background:#8e44ad;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px">{{upcomingProducts.length}}</span></div>
+  <div class="tab" ng-class="{active: tab==='previous'}" ng-click="tab='previous'; loadPrevious()">🏛️ Previous Auctions</div>
+  <div class="tab" ng-class="{active: tab==='mybids'}"   ng-click="tab='mybids'; loadMyBids()">📋 My Biddings</div>
+</div>
+
+<div class="container">
+
+  <!-- ══════════════════════════════════════
+       TAB 1 — LIVE AUCTIONS
+       Sub-view A: Browse list
+       Sub-view B: Bid on selected product
+  ══════════════════════════════════════ -->
+  <div ng-show="tab==='live'">
+
+    <!-- Counter row -->
+    <div class="counter-row">
+      <div class="counter-card c-live">
+        <div class="counter-num">{{activeLiveCount()}}</div>
+        <div class="counter-lbl">Live Now</div>
+      </div>
+      <div class="counter-card c-upcoming">
+        <div class="counter-num">{{upcomingProducts.length}}</div>
+        <div class="counter-lbl">Upcoming</div>
+      </div>
+      <div class="counter-card c-buyers">
+        <div class="counter-num">{{totalLiveBuyers()}}</div>
+        <div class="counter-lbl">Live Bidders</div>
+      </div>
+      <div class="counter-card c-total">
+        <div class="counter-num">{{totalAllBuyers}}</div>
+        <div class="counter-lbl">Total Buyers</div>
+      </div>
+      <div class="counter-card c-seller">
+        <div class="counter-num">{{totalSellers}}</div>
+        <div class="counter-lbl">Total Sellers</div>
+      </div>
+    </div>
+    <!-- ── SUB-VIEW A: Browse list ── -->
+    <div ng-show="!selectedProduct">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" ng-model="liveQ" placeholder="Search products or sellers…">
+      </div>
+      <div class="result-count" ng-if="liveQ">Showing {{filteredLive().length}} of {{liveProducts.length}} products</div>
+
+      <div class="empty" ng-if="activeLiveCount()===0 && upcomingProducts.length===0">No auctions right now. Check back soon!</div>
+      <div class="empty" ng-if="activeLiveCount()===0 && upcomingProducts.length>0">No live auctions yet — check the 🕐 Upcoming tab for scheduled auctions.</div>
+      <div class="empty" ng-if="activeLiveCount()>0 && filteredLive().length===0">No products match your search.</div>
+
+      <div class="browse-card" ng-repeat="p in filteredLive() track by p._id" ng-if="isAuctionStarted(p)">
+        <img ng-if="p.imageData" ng-src="data:{{p.imageMime}};base64,{{p.imageData}}" class="browse-thumb" alt="product">
+        <div ng-if="!p.imageData" class="no-img-thumb">📦</div>
+        <div class="browse-info">
+          <div class="browse-name">{{p.name}}</div>
+          <div class="browse-meta">
+            <div class="bmeta-cell"><div class="bl">Seller</div><div class="bv">{{p.seller}}</div></div>
+            <div class="bmeta-cell"><div class="bl">Base Price</div><div class="bv">₹{{p.basePrice}}</div></div>
+            <div class="bmeta-cell"><div class="bl">Highest Bid</div><div class="bv red">₹{{p.currentBid}}</div></div>
+            <div class="bmeta-cell"><div class="bl">Bid Window</div><div class="bv">{{p.bidWindowSec}}s</div></div>
+          </div>
+        </div>
+        <button class="btn-bid-now" ng-click="selectProduct(p)">🔨 Bid Now →</button>
+      </div>
+    </div>
+
+    <!-- ── SUB-VIEW B: Active bid section ── -->
+    <div ng-show="selectedProduct">
+      <button class="back-btn" ng-click="backToList()">← Back to all auctions</button>
+
+      <div class="pcard">
+        <div class="pcard-name">
+          <img ng-if="selectedProduct.imageData" ng-src="data:{{selectedProduct.imageMime}};base64,{{selectedProduct.imageData}}" class="pcard-img" alt="product">
+          <div ng-if="!selectedProduct.imageData" class="no-img-pcard">📦</div>
+          {{selectedProduct.name}}
+        </div>
+
+        <div class="info-grid">
+          <div class="info-cell"><div class="lbl">Seller</div><div class="val">{{selectedProduct.seller}}</div></div>
+          <div class="info-cell"><div class="lbl">Base Price</div><div class="val">₹{{selectedProduct.basePrice}}</div></div>
+          <div class="info-cell"><div class="lbl">Highest Bid</div><div class="val val-red">₹{{selectedProduct.currentBid}}</div></div>
+          <div class="info-cell" ng-if="selectedProduct.bidWindowSec"><div class="lbl">Bid Window</div><div class="val">{{selectedProduct.bidWindowSec}}s</div></div>
+        </div>
+
+        <!-- countdown — server-authoritative timer -->
+        <!-- Case 1: Scheduled but not yet started -->
+        <div class="big-timer t-upcoming" ng-if="!selectedProduct.bidEndTime && selectedProduct.auctionStartTime && !isAuctionStarted(selectedProduct)">
+          <div class="t-label">🕐 Auction starts in</div>
+          <div class="t-digits" style="font-size:32px;color:#6c3483" ng-bind="getStartCountdown(selectedProduct)"></div>
+          <div class="t-sub">Scheduled: {{selectedProduct.auctionStartTime | date:'dd MMM yyyy, h:mm a'}}</div>
+        </div>
+        <!-- Case 2: Started but no bids yet (auto-started by schedule OR no-bid scenario) -->
+        <div class="big-timer" ng-if="selectedProduct.bidEndTime" ng-class="getBigClass(selectedProduct)">
+          <div class="t-label" ng-if="!selectedProduct.bids || selectedProduct.bids.length===0">⏱ Auction live — {{selectedProduct.bidWindowSec}}s window running (auto-started)</div>
+          <div class="t-label" ng-if="selectedProduct.bids && selectedProduct.bids.length>0">⏱ Time remaining — resets on every new bid</div>
+          <div class="t-digits" ng-bind="getBigCountdown(selectedProduct)"></div>
+          <div class="t-sub" ng-if="selectedProduct.bids && selectedProduct.bids[0]">Last bid by <b>{{selectedProduct.bids[0].bidder}}</b></div>
+          <div class="t-sub" ng-if="!selectedProduct.bids || selectedProduct.bids.length===0">No bids yet — be the first to bid!</div>
+        </div>
+        <!-- Case 3: No schedule set, no bids yet (manual mode — first bid starts timer) -->
+        <div class="big-timer t-wait" ng-if="!selectedProduct.bidEndTime && (!selectedProduct.auctionStartTime || isAuctionStarted(selectedProduct))">
+          <div class="t-label">⏳ Countdown starts on first bid</div>
+          <div class="t-digits" style="font-size:22px;color:#888">Waiting…</div>
+          <div class="t-sub">Place a bid to start the {{selectedProduct.bidWindowSec}}s timer</div>
+        </div>
+
+        <!-- bid form -->
+        <div class="bid-form">
+          <input type="number" placeholder="Your bid (₹)"
+                 ng-model="selectedProduct.bidAmount"
+                 ng-class="{err: selectedProduct.bidErr}"
+                 ng-change="validateBid(selectedProduct)">
+          <input type="text" placeholder="Your name"
+                 ng-model="selectedProduct.bidderName"
+                 ng-readonly="!!globalName">
+          <button class="btn-bid" ng-click="placeBid(selectedProduct)"
+                  ng-disabled="selectedProduct.placing || (!isAuctionStarted(selectedProduct) && !!selectedProduct.auctionStartTime)">
+            <span ng-if="selectedProduct.placing">Placing…</span>
+            <span ng-if="!selectedProduct.placing && !isAuctionStarted(selectedProduct) && !!selectedProduct.auctionStartTime">⏳ Not Started</span>
+            <span ng-if="!selectedProduct.placing && (isAuctionStarted(selectedProduct) || !selectedProduct.auctionStartTime)">🔨 Place Bid</span>
+          </button>
+        </div>
+        <div class="msg msg-err" ng-if="selectedProduct.bidErr">⚠️ {{selectedProduct.bidErr}}</div>
+        <div class="msg msg-ok"  ng-if="selectedProduct.bidOk" >✅ {{selectedProduct.bidOk}}</div>
+
+        <hr class="div">
+
+        <div class="bh-title">📊 Bid History ({{selectedProduct.bids ? selectedProduct.bids.length : 0}})</div>
+        <div class="no-bids" ng-if="!selectedProduct.bids || selectedProduct.bids.length===0">No bids yet — be the first!</div>
+        <div class="bh-row"
+             ng-repeat="b in selectedProduct.bids | orderBy:'-amount'"
+             ng-class="{'top':$index===0, 'mine': b.bidder===globalName}">
+          <span>
+            {{$index===0?'🥇':($index===1?'🥈':($index===2?'🥉':'   '))}}
+            {{b.bidder}}
+            <span ng-if="b.bidder===globalName" style="font-size:11px;color:#27ae60;font-weight:700">(you)</span>
+          </span>
+          <span>₹{{b.amount}}</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /live tab -->
+
+
+  <!-- TAB 2 — UPCOMING AUCTIONS -->
+  <div ng-show="tab==='upcoming'">
+    <div class="counter-row">
+      <div class="counter-card c-upcoming">
+        <div class="counter-num">{{upcomingProducts.length}}</div>
+        <div class="counter-lbl">Scheduled</div>
+      </div>
+    </div>
+
+    <div class="sec-title">🕐 Upcoming Auctions <small>Will auto-start at scheduled time</small></div>
+    <div class="empty" ng-if="upcomingProducts.length===0">No upcoming auctions scheduled. Check back soon!</div>
+
+    <div class="upcoming-card" ng-repeat="p in upcomingProducts track by p._id">
+      <img ng-if="p.imageData" ng-src="data:{{p.imageMime}};base64,{{p.imageData}}" class="browse-thumb" alt="product">
+      <div ng-if="!p.imageData" class="no-img-thumb">📦</div>
+      <div class="browse-info">
+        <div class="upcoming-badge">🕐 Scheduled</div>
+        <div class="browse-name">{{p.name}}</div>
+        <div class="browse-meta">
+          <div class="bmeta-cell"><div class="bl">Seller</div><div class="bv">{{p.seller}}</div></div>
+          <div class="bmeta-cell"><div class="bl">Base Price</div><div class="bv">₹{{p.basePrice}}</div></div>
+          <div class="bmeta-cell"><div class="bl">Bid Window</div><div class="bv">{{p.bidWindowSec}}s</div></div>
+          <div class="bmeta-cell"><div class="bl">Starts At</div><div class="bv" style="color:#6c3483">{{p.auctionStartTime | date:'dd MMM, h:mm a'}}</div></div>
+        </div>
+      </div>
+      <div class="upcoming-countdown">
+        <div class="uc-label">Starts in</div>
+        <div class="uc-digits" ng-bind="getStartCountdown(p)"></div>
+        <div class="uc-sub">{{p.bidWindowSec}}s bid window</div>
+      </div>
+    </div>
+  </div><!-- /upcoming tab -->
+
+
+  <!-- TAB 3 — PREVIOUS AUCTIONS -->
+  <div ng-show="tab==='previous'">
+
+    <!-- Counters -->
+    <div class="counter-row">
+      <div class="counter-card c-live" style="border-top-color:#555">
+        <div class="counter-num">{{prevProducts.length}}</div>
+        <div class="counter-lbl">Completed</div>
+      </div>
+      <div class="counter-card c-total">
+        <div class="counter-num">{{prevWonCount()}}</div>
+        <div class="counter-lbl">You Won</div>
+      </div>
+      <div class="counter-card c-seller">
+        <div class="counter-num">{{prevUniqueSellerCount()}}</div>
+        <div class="counter-lbl">Unique Sellers</div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" ng-model="prevQ" placeholder="Search by product name or seller…">
+    </div>
+    <div class="result-count" ng-if="prevQ">Showing {{filteredPrev().length}} of {{prevProducts.length}} auctions</div>
+
+    <div class="sec-title">
+      Previous Auctions
+      <small>{{prevProducts.length}} completed</small>
+    </div>
+
+    <div class="empty" ng-if="filteredPrev().length===0">No completed auctions yet.</div>
+
+    <div class="prev-card" ng-repeat="p in filteredPrev() track by p._id">
+      <div class="prev-card-top">
+        <span class="prev-name">{{p.name}}</span>
+        <span class="closed-badge" ng-if="p.status==='closed'">CLOSED</span>
+        <span class="closed-badge" ng-if="p.status==='unsold'" style="background:#fff3cd;color:#856404">♻️ RE-AUCTION</span>
+      </div>
+      <div class="prev-info">
+        <div><b>Seller:</b> {{p.seller}}</div>
+        <div><b>Base Price:</b> ₹{{p.basePrice}}</div>
+        <div><b>Final Bid:</b> ₹{{p.currentBid}}</div>
+        <div><b>Bid Window:</b> {{p.bidWindowSec}}s</div>
+      </div>
+      <div class="winner-strip" ng-if="p.winner && p.winner!=='No bids'">
+        🏆 <b>Winner:</b> {{p.winner}}
+        &nbsp;|&nbsp; <b>Winning Amount:</b> ₹{{p.winnerAmount}}
+        <span ng-if="p.winner===globalName" style="margin-left:10px;font-weight:700">🎉 That's you!</span>
+      </div>
+      <div class="winner-strip no-bid" ng-if="p.status==='unsold'">
+        ♻️ <b>No bids placed</b> — this product has been moved to the re-auction queue. It will appear again once the seller re-submits it for approval.
+      </div>
+      <div class="participants-title">👥 All Participants ({{p.bids ? p.bids.length : 0}} bids)</div>
+      <div class="no-bids" ng-if="!p.bids || p.bids.length===0">No bids were placed.</div>
+      <div class="p-row"
+           ng-repeat="b in p.bids | orderBy:'-amount'"
+           ng-class="{'winner-row': b.bidder===p.winner && $index===0, 'my-row': b.bidder===globalName}">
+        <span>
+          {{$index===0 ? '🥇' : ($index===1 ? '🥈' : ($index===2 ? '🥉' : '   '))}}
+          {{b.bidder}}
+          <span ng-if="b.bidder===p.winner && $index===0" style="font-size:11px;margin-left:4px">🏆 Winner</span>
+          <span ng-if="b.bidder===globalName" style="font-size:11px;color:#27ae60;font-weight:700;margin-left:4px">(you)</span>
+        </span>
+        <span>₹{{b.amount}}</span>
+      </div>
+    </div>
+  </div><!-- /previous tab -->
+
+
+  <!-- TAB 4 — MY BIDDINGS -->
+  <div ng-show="tab==='mybids'">
+
+    <!-- Counters -->
+    <div class="counter-row">
+      <div class="counter-card c-live">
+        <div class="counter-num">{{myBidsLiveCount()}}</div>
+        <div class="counter-lbl">Still Live</div>
+      </div>
+      <div class="counter-card" style="border-top:4px solid #27ae60">
+        <div class="counter-num">{{myBidsWonCount()}}</div>
+        <div class="counter-lbl">Auctions Won</div>
+      </div>
+      <div class="counter-card" style="border-top:4px solid #bbb">
+        <div class="counter-num">{{myBidsLostCount()}}</div>
+        <div class="counter-lbl">Auctions Lost</div>
+      </div>
+      <div class="counter-card c-total">
+        <div class="counter-num">{{myBids.length}}</div>
+        <div class="counter-lbl">Total Participated</div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" ng-model="myBidsQ" placeholder="Search by product name or seller…">
+    </div>
+    <div class="result-count" ng-if="myBidsQ">Showing {{filteredMyBids().length}} of {{myBids.length}} entries</div>
+
+    <div class="sec-title">
+      My Bidding History
+      <small>as <b>{{globalName || buyerName}}</b></small>
+    </div>
+
+    <div class="empty" ng-if="!globalName">Please set your bidding name in the banner above to see your bids.</div>
+    <div class="empty" ng-if="globalName && myBids.length===0">You haven't placed any bids yet.</div>
+    <div class="empty" ng-if="globalName && myBids.length>0 && filteredMyBids().length===0">No results match your search.</div>
+
+    <div class="mybid-card"
+         ng-repeat="b in filteredMyBids()"
+         ng-class="{won:  b.status==='closed' && b.winner===globalName,
+                    live: b.status==='approved',
+                    lost: b.status==='closed' && b.winner!==globalName}">
+      <div class="mybid-top">
+        <span class="mybid-name">{{b.productName}}</span>
+        <span class="mbadge mb-won"  ng-if="b.status==='closed' && b.winner===globalName">🏆 WON</span>
+        <span class="mbadge mb-live" ng-if="b.status==='approved'">🔴 LIVE</span>
+        <span class="mbadge mb-lost" ng-if="b.status==='closed' && b.winner!==globalName">Ended</span>
+      </div>
+      <div class="mybid-info">
+        <div><b>Your Highest Bid:</b> ₹{{b.myBidAmount}}</div>
+        <div><b>Base Price:</b> ₹{{b.basePrice}}</div>
+        <div><b>Seller:</b> {{b.seller}}</div>
+        <div ng-if="b.status==='closed'"><b>Final Price:</b> ₹{{b.winnerAmount}}</div>
+        <div ng-if="b.status==='closed'"><b>Winner:</b> {{b.winner || '—'}}</div>
+      </div>
+      <div class="won-banner" ng-if="b.status==='closed' && b.winner===globalName">
+        🏆 Congratulations! You won <b>{{b.productName}}</b> for ₹{{b.winnerAmount}}!
+      </div>
+      <div class="lost-note" ng-if="b.status==='closed' && b.winner && b.winner!==globalName">
+        Won by <b>{{b.winner}}</b> at ₹{{b.winnerAmount}}. Your highest bid was ₹{{b.myBidAmount}}.
+      </div>
+      <div style="font-size:13px;color:#3498db;font-weight:700;margin-top:4px" ng-if="b.status==='approved'">
+        ⏳ Auction still live — current highest bid is ₹{{b.currentBid}}
+      </div>
+    </div>
+  </div><!-- /mybids tab -->
+
+</div><!-- /container -->
+
+<script>
+var app = angular.module('auctionApp', []);
+app.controller('buyerCtrl', function($scope, $http, $interval, $timeout) {
+
+  /* ── identity ── */
+  var user           = JSON.parse(localStorage.getItem('user') || '{}');
+  $scope.buyerName   = user.name  || 'Buyer';
+  $scope.globalName  = localStorage.getItem('bidderName') || $scope.buyerName;
+  $scope.tab         = 'live';
+
+  /* ── data ── */
+  $scope.liveProducts     = [];
+  $scope.upcomingProducts = [];   // scheduled, not yet started
+  $scope.prevProducts     = [];
+  $scope.myBids           = [];
+  $scope.selectedProduct  = null;
+  $scope.totalAllBuyers   = 0;
+  $scope.totalSellers     = 0;
+
+  /* ── search models ── */
+  $scope.liveQ   = '';
+  $scope.prevQ   = '';
+  $scope.myBidsQ = '';
+
+  /* ── persist global name ── */
+  $scope.saveGlobalName = function() {
+    localStorage.setItem('bidderName', $scope.globalName);
+    $scope.liveProducts.forEach(function(p) { p.bidderName = $scope.globalName; });
+    if($scope.selectedProduct) $scope.selectedProduct.bidderName = $scope.globalName;
+  };
+
+  /* ── counters ── */
+  $scope.totalLiveBuyers = function(){
+    var bidders = {};
+    $scope.liveProducts.forEach(function(p){
+      if(p.bids) p.bids.forEach(function(b){ bidders[b.bidder]=true; });
+    });
+    return Object.keys(bidders).length;
+  };
+
+  // Previous Auctions tab counters
+  $scope.prevWonCount = function(){
+    return $scope.prevProducts.filter(function(p){ return p.winner && p.winner === $scope.globalName; }).length;
+  };
+  $scope.prevUniqueSellerCount = function(){
+    var sellers = {};
+    $scope.prevProducts.forEach(function(p){ if(p.seller) sellers[p.seller]=true; });
+    return Object.keys(sellers).length;
+  };
+
+  // My Biddings tab counters
+  $scope.myBidsLiveCount = function(){
+    return $scope.myBids.filter(function(b){ return b.status==='approved'; }).length;
+  };
+  $scope.myBidsWonCount = function(){
+    return $scope.myBids.filter(function(b){ return b.status==='closed' && b.winner===$scope.globalName; }).length;
+  };
+  $scope.myBidsLostCount = function(){
+    return $scope.myBids.filter(function(b){ return b.status==='closed' && b.winner!==$scope.globalName; }).length;
+  };
+
+  /* ── auction state helpers ── */
+
+  // Returns true if the auction has officially started (auctionStartTime passed or null)
+  $scope.isAuctionStarted = function(p) {
+    if (!p) return false;
+    if (!p.auctionStartTime) return true;   // no schedule = immediate
+    return new Date(p.auctionStartTime).getTime() <= Date.now();
+  };
+
+  // Countdown string to auction start time
+  $scope.getStartCountdown = function(p) {
+    if (!p || !p.auctionStartTime) return '—';
+    var d = new Date(p.auctionStartTime).getTime() - Date.now();
+    if (d <= 0) return 'Starting…';
+    var h = Math.floor(d / 3600000);
+    var m = Math.floor((d % 3600000) / 60000);
+    var s = Math.floor((d % 60000) / 1000);
+    if (h > 0) return (h < 10 ? '0'+h : h) + 'h ' + (m < 10 ? '0'+m : m) + 'm';
+    if (m > 0) return (m < 10 ? '0'+m : m) + 'm ' + (s < 10 ? '0'+s : s) + 's';
+    return s + 's';
+  };
+
+  // Count of products that are actively live (started, not upcoming)
+  $scope.activeLiveCount = function() {
+    return $scope.liveProducts.filter(function(p){ return $scope.isAuctionStarted(p); }).length;
+  };
+
+  function loadUserCounts(){
+    $http.get('http://localhost:3000/auth/allUsers').then(function(r){
+      $scope.totalAllBuyers = r.data.filter(function(u){ return u.role==='buyer'; }).length;
+      $scope.totalSellers   = r.data.filter(function(u){ return u.role==='seller'; }).length;
+    });
+  }
+
+  /* ── browse / bid navigation ── */
+  $scope.goLiveBrowse = function(){
+    $scope.tab='live';
+    $scope.selectedProduct=null;
+  };
+
+  $scope.selectProduct = function(p){
+    // find the matching product in liveProducts array (maintains live binding)
+    for(var i=0;i<$scope.liveProducts.length;i++){
+      if($scope.liveProducts[i]._id===p._id){
+        $scope.selectedProduct = $scope.liveProducts[i];
+        break;
+      }
+    }
+    if(!$scope.selectedProduct) $scope.selectedProduct=p;
+    $scope.selectedProduct.bidderName = $scope.globalName;
+    // Auto-fill bid amount with currentBid + 1
+    $scope.selectedProduct.bidAmount = ($scope.selectedProduct.currentBid || $scope.selectedProduct.basePrice) + 1;
+    // load bids for selected product immediately
+    $http.get('http://localhost:3000/bid/product/'+$scope.selectedProduct._id)
+      .then(function(br){
+        $scope.selectedProduct.bids=br.data;
+        // re-set auto-fill after bids are loaded (currentBid may update)
+        $scope.selectedProduct.bidAmount = ($scope.selectedProduct.currentBid || $scope.selectedProduct.basePrice) + 1;
+      });
+  };
+
+  $scope.backToList = function(){
+    $scope.selectedProduct=null;
+  };
+
+  /* ── search filters ── */
+  $scope.filteredLive = function(){
+    // Only show started auctions in live tab
+    var started = $scope.liveProducts.filter(function(p){ return $scope.isAuctionStarted(p); });
+    if(!$scope.liveQ) return started;
+    var q=$scope.liveQ.toLowerCase();
+    return started.filter(function(p){
+      return (p.name||'').toLowerCase().includes(q)||(p.seller||'').toLowerCase().includes(q);
+    });
+  };
+
+  $scope.filteredUpcoming = function(){
+    if(!$scope.liveQ) return $scope.upcomingProducts;
+    var q=$scope.liveQ.toLowerCase();
+    return $scope.upcomingProducts.filter(function(p){
+      return (p.name||'').toLowerCase().includes(q)||(p.seller||'').toLowerCase().includes(q);
+    });
+  };
+  $scope.filteredPrev = function(){
+    if(!$scope.prevQ) return $scope.prevProducts;
+    var q=$scope.prevQ.toLowerCase();
+    return $scope.prevProducts.filter(function(p){
+      return (p.name||'').toLowerCase().includes(q)||(p.seller||'').toLowerCase().includes(q);
+    });
+  };
+  $scope.filteredMyBids = function(){
+    if(!$scope.myBidsQ) return $scope.myBids;
+    var q=$scope.myBidsQ.toLowerCase();
+    return $scope.myBids.filter(function(b){
+      return (b.productName||'').toLowerCase().includes(q)||(b.seller||'').toLowerCase().includes(q);
+    });
+  };
+
+  /* ── sold popup ── */
+  $scope.popup = { show:false, phase:'', count:0, amount:0, winner:'', productName:'', isYou:false };
+  var popupTimer = null;
+
+  function showSoldPopup(productName, amount, winner) {
+    if ($scope.popup.show) return;
+    if (popupTimer) $timeout.cancel(popupTimer);
+    $scope.popup = { show:true, phase:'counting', count:3,
+                     amount:amount, winner:winner, productName:productName,
+                     isYou: winner === $scope.globalName };
+    function tick() {
+      if ($scope.popup.count > 1) {
+        $scope.popup.count--;
+        popupTimer = $timeout(tick, 1000);
+      } else {
+        $scope.popup.phase = 'sold';
+        popupTimer = $timeout(function() {
+          $scope.popup.show = false;
+          loadLive();
+          loadPrev();
+          if ($scope.tab === 'mybids') $scope.loadMyBids();
+        }, 3500);
+      }
+    }
+    popupTimer = $timeout(tick, 1000);
+  }
+
+  /* ══════════════════════════════════════════════════════
+     TIMER FIX:
+     We use the SERVER'S bidEndTime as the single source of
+     truth.  Each client computes remaining = bidEndTime - now
+     independently, which gives all clients the same countdown
+     regardless of when they loaded the page.
+     The polling interval keeps bidEndTime in sync after every
+     new bid (which resets it server-side).
+  ══════════════════════════════════════════════════════ */
+  $scope.getBigCountdown = function(p) {
+    if (!p || !p.bidEndTime) return '—';
+    var serverEnd = new Date(p.bidEndTime).getTime();
+    var now       = Date.now();
+    var d         = serverEnd - now;
+    if (d <= 0) return '00';
+    var m = Math.floor(d / 60000), s = Math.floor((d % 60000) / 1000);
+    return m > 0 ? (m<10?'0'+m:m)+':'+(s<10?'0'+s:s) : s + 's';
+  };
+
+  $scope.getBigClass = function(p) {
+    if (!p || !p.bidEndTime) return 't-wait';
+    var d = new Date(p.bidEndTime).getTime() - Date.now();
+    if (d <= 0)    return 't-ended';
+    if (d < 5000)  return 't-urgent';
+    if (d < 15000) return 't-warn';
+    return 't-live';
+  };
+
+  /* ── bid validation ── */
+  $scope.validateBid = function(p) {
+    p.bidErr = '';
+    var a = parseFloat(p.bidAmount);
+    if (!a || isNaN(a)) return;
+    if (a <= p.basePrice)    p.bidErr = 'Bid must exceed base price ₹' + p.basePrice;
+    else if (a <= p.currentBid) p.bidErr = 'Bid must exceed current bid ₹' + p.currentBid;
+  };
+
+  /* ── place bid ── */
+  $scope.placeBid = function(p) {
+    p.bidErr = ''; p.bidOk = '';
+    var a    = parseFloat(p.bidAmount);
+    var name = ($scope.globalName || '').trim() || (p.bidderName || '').trim();
+    if (!p.bidAmount)       { p.bidErr = 'Enter a bid amount.'; return; }
+    if (!name)              { p.bidErr = 'Set your bidding name in the banner above.'; return; }
+    if (isNaN(a) || a <= 0) { p.bidErr = 'Enter a valid amount.'; return; }
+    if (a <= p.basePrice)   { p.bidErr = 'Must exceed base price ₹' + p.basePrice; return; }
+    if (a <= p.currentBid)  { p.bidErr = 'Must exceed current bid ₹' + p.currentBid; return; }
+
+    p.placing = true;
+    $http.post('http://localhost:3000/bid/place', { productId: p._id, bidder: name, amount: a })
+      .then(function(r) {
+        p.bidOk        = 'Bid of ₹' + a + ' placed! Timer reset to ' + r.data.bidWindowSec + 's.';
+        p.currentBid   = r.data.currentBid;
+        // Use server's authoritative bidEndTime directly — keeps all clients in sync
+        p.bidEndTime   = r.data.bidEndTime;
+        p.bidWindowSec = r.data.bidWindowSec;
+        // Auto-fill next bid amount to currentBid + 1
+        p.bidAmount    = r.data.currentBid + 1;
+        p._finalizing  = false;
+        $http.get('http://localhost:3000/bid/product/' + p._id)
+          .then(function(br) { p.bids = br.data; });
+      }, function(err) {
+        p.bidErr = err.data && err.data.message ? err.data.message : 'Failed. Try again.';
+      }).finally(function() { p.placing = false; });
+  };
+
+  /* ── load live products (merged, preserving UI state) ── */
+  function loadLive() {
+    $http.get('http://localhost:3000/product/live').then(function(r) {
+      var fresh = r.data;
+      var now   = Date.now();
+
+      // Split fresh data into started vs upcoming
+      var freshStarted  = fresh.filter(function(p){ return !p.auctionStartTime || new Date(p.auctionStartTime).getTime() <= now; });
+      var freshUpcoming = fresh.filter(function(p){ return p.auctionStartTime  && new Date(p.auctionStartTime).getTime()  > now; });
+
+      // ── Sync upcomingProducts list ──
+      // Add new upcoming
+      freshUpcoming.forEach(function(np){
+        var found = $scope.upcomingProducts.some(function(u){ return u._id === np._id; });
+        if (!found) $scope.upcomingProducts.push(np);
+      });
+      // Update existing upcoming
+      $scope.upcomingProducts.forEach(function(up){
+        var srv = freshUpcoming.find(function(np){ return np._id === up._id; });
+        if (srv) { up.auctionStartTime = srv.auctionStartTime; up.bidWindowSec = srv.bidWindowSec; }
+      });
+      // Remove upcoming that have now started (move them to live)
+      for (var i = $scope.upcomingProducts.length - 1; i >= 0; i--) {
+        var stillUpcoming = freshUpcoming.some(function(fp){ return fp._id === $scope.upcomingProducts[i]._id; });
+        if (!stillUpcoming) $scope.upcomingProducts.splice(i, 1);
+      }
+
+      // ── Sync liveProducts list (started auctions only) ──
+      freshStarted.forEach(function(np) {
+        var found = null;
+        for (var i = 0; i < $scope.liveProducts.length; i++) {
+          if ($scope.liveProducts[i]._id === np._id) { found = $scope.liveProducts[i]; break; }
+        }
+        if (found) {
+          // Only update if server value has changed — avoids timer jumping
+          if (found.currentBid !== np.currentBid) {
+            found.currentBid = np.currentBid;
+            if ($scope.selectedProduct && $scope.selectedProduct._id === found._id) {
+              if (!found.bidAmount || found.bidAmount <= found.currentBid) {
+                found.bidAmount = found.currentBid + 1;
+              }
+            }
+          }
+          // Always trust the server's bidEndTime as the authoritative clock reference
+          if (found.bidEndTime !== np.bidEndTime) found.bidEndTime = np.bidEndTime;
+          found.auctionStartTime = np.auctionStartTime;
+          found.bidWindowSec     = np.bidWindowSec;
+          found.status           = np.status;
+          found.winner           = np.winner;
+          found.winnerAmount     = np.winnerAmount;
+        } else {
+          np.bids       = [];
+          np.bidderName = $scope.globalName || '';
+          $scope.liveProducts.push(np);
+          $http.get('http://localhost:3000/bid/product/' + np._id)
+            .then(function(br) { np.bids = br.data; });
+        }
+      });
+
+      // Remove products no longer live/started
+      for (var i = $scope.liveProducts.length - 1; i >= 0; i--) {
+        var still = freshStarted.some(function(fp){ return fp._id === $scope.liveProducts[i]._id; });
+        if (!still) {
+          if ($scope.selectedProduct && $scope.selectedProduct._id === $scope.liveProducts[i]._id) {
+            $scope.selectedProduct = null;
+          }
+          $scope.liveProducts.splice(i, 1);
+        }
+      }
+    });
+
+    // Refresh bids for each live product
+    $scope.liveProducts.forEach(function(p) {
+      $http.get('http://localhost:3000/bid/product/' + p._id)
+        .then(function(br) { p.bids = br.data; });
+    });
+  }
+
+  /* ── load previous ── */
+  function loadPrev() {
+    $http.get('http://localhost:3000/product/closed').then(function(r) {
+      $scope.prevProducts = r.data;
+      $scope.prevProducts.forEach(function(p) {
+        $http.get('http://localhost:3000/bid/product/' + p._id)
+          .then(function(br) { p.bids = br.data; });
+      });
+    });
+  }
+  $scope.loadPrevious = loadPrev;
+
+  /* ── load my biddings ── */
+  $scope.loadMyBids = function() {
+    var name = ($scope.globalName || $scope.buyerName || '').trim();
+    if (!name) return;
+    $http.get('http://localhost:3000/bid/buyer/' + encodeURIComponent(name))
+      .then(function(r) { $scope.myBids = r.data; });
+  };
+
+  /* ══════════════════════════════════════════════════
+     1-SECOND TICK
+     1) Calls /start-scheduled to auto-start bid windows at admin-set time
+        even if no buyer has bid (the server sets bidEndTime for them).
+     2) Detects expired auctions and finalises them.
+        — Has bids  → shows SOLD popup
+        — No bids   → marks unsold for re-auction (no popup)
+     Timer display uses server's bidEndTime for synchronisation.
+  ══════════════════════════════════════════════════ */
+  $interval(function() {
+
+    // ── Auto-start scheduled auctions whose time has come ──
+    // Throttle to every 2s to avoid hammering the server
+    if (!$scope._schedTick) $scope._schedTick = 0;
+    $scope._schedTick++;
+    if ($scope._schedTick % 2 === 0) {
+      $http.post('http://localhost:3000/product/start-scheduled', {}).then(function(r) {
+        if (r.data && r.data.started > 0) {
+          // One or more auctions just auto-started — refresh live list immediately
+          loadLive();
+        }
+      });
+    }
+
+    // ── Detect and finalise expired auctions ──
+    $scope.liveProducts.forEach(function(p) {
+      if (p.status === 'approved' && p.bidEndTime && new Date(p.bidEndTime).getTime() < Date.now()) {
+        if (!p._finalizing) {
+          p._finalizing = true;
+          $http.post('http://localhost:3000/product/finalize', {}).then(function() {
+            $http.get('http://localhost:3000/product/' + p._id).then(function(r) {
+              var u = r.data;
+              if (u.status === 'closed') {
+                // Auction sold — show popup
+                showSoldPopup(p.name, u.currentBid, u.winner);
+                loadLive();
+                loadPrev();
+                if ($scope.tab === 'mybids') $scope.loadMyBids();
+              } else if (u.status === 'unsold') {
+                // No bids — silently move to re-auction queue
+                loadLive();
+                loadPrev();
+                if ($scope.tab === 'mybids') $scope.loadMyBids();
+              }
+            });
+          });
+        }
+      }
+    });
+  }, 1000);
+
+  /* ── auto-sync live every 3s ── */
+  $interval(function() { loadLive(); }, 3000);
+
+  /* ── auto-sync other tabs every 10s ── */
+  $interval(function() {
+    if ($scope.tab === 'previous') loadPrev();
+    if ($scope.tab === 'mybids')   $scope.loadMyBids();
+  }, 10000);
+
+  $scope.logout = function() {
+    localStorage.removeItem('user');
+    window.location.href = 'login.html';
+  };
+
+  /* ── initial load ── */
+  loadLive();
+  loadPrev();
+  loadUserCounts();
+});
+</script>
+</body>
+</html>

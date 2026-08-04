@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html ng-app="auctionApp">
+<head>
+<title>Seller Dashboard</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh}
+.topbar{background:#e67e22;color:#fff;padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
+.topbar h1{font-size:19px}
+.logout-btn{background:#fff;color:#e67e22;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-weight:700}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e0e0e0;padding:0 28px;overflow-x:auto}
+.tab{padding:13px 20px;cursor:pointer;font-weight:700;color:#888;border-bottom:3px solid transparent;transition:.15s;white-space:nowrap}
+.tab.active{color:#e67e22;border-bottom-color:#e67e22}
+.container{padding:22px 28px;max-width:900px;margin:0 auto}
+/* counter cards */
+.counter-row{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.counter-card{background:#fff;border-radius:10px;padding:18px 22px;flex:1;min-width:130px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:4px}
+.counter-card.c-total  {border-top:4px solid #e67e22}
+.counter-card.c-live   {border-top:4px solid #27ae60}
+.counter-card.c-closed {border-top:4px solid #555}
+.counter-card.c-pending{border-top:4px solid #f39c12}
+.counter-num{font-size:30px;font-weight:900;line-height:1;color:#222}
+.counter-lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px}
+/* search */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:10px 16px 10px 40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border .2s}
+.search-wrap input:focus{border-color:#e67e22}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#bbb;font-size:15px;pointer-events:none}
+.result-count{font-size:12px;color:#888;margin-bottom:10px;font-style:italic}
+/* form */
+.form-card{background:#fff;border-radius:10px;padding:24px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.form-card h2{margin-bottom:16px;color:#333;font-size:17px}
+.form-card input[type=text],.form-card input[type=number]{width:100%;padding:11px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;font-size:14px}
+.btn-submit{width:100%;padding:12px;background:#e67e22;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer}
+.btn-submit:hover{background:#cf6d17}
+/* image upload area */
+.img-upload-area{border:2px dashed #ddd;border-radius:8px;padding:20px;text-align:center;margin-bottom:12px;cursor:pointer;transition:border .2s;position:relative}
+.img-upload-area:hover{border-color:#e67e22;background:#fffaf5}
+.img-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-upload-label{font-size:14px;color:#888;pointer-events:none}
+.img-upload-label span{color:#e67e22;font-weight:700}
+.img-preview-wrap{position:relative;display:inline-block;margin-bottom:12px}
+.img-preview{max-width:100%;max-height:180px;border-radius:8px;border:1px solid #ddd;display:block}
+.img-remove{position:absolute;top:-8px;right:-8px;background:#e74c3c;color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.img-formats{font-size:11px;color:#aaa;margin-top:4px}
+/* toast */
+.toast{padding:11px 16px;border-radius:8px;margin-bottom:12px;font-size:14px;font-weight:700}
+.t-ok {background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+.t-err{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
+/* product card */
+.pcard{background:#fff;border-radius:10px;padding:18px 20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.pcard-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.pcard-name{font-size:16px;font-weight:700;color:#222}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-pending {background:#fff3cd;color:#856404}
+.badge-approved{background:#d4edda;color:#155724}
+.badge-rejected{background:#f8d7da;color:#721c24}
+.badge-closed  {background:#e2e3e5;color:#383d41}
+.badge-unsold  {background:#ffeeba;color:#856404}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.info-cell{background:#f8f9fa;border-radius:6px;padding:7px 10px}
+.info-cell .lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.info-cell .val{font-size:14px;font-weight:700;color:#222}
+.timer-chip{display:inline-block;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;margin-top:6px;margin-right:6px}
+.tc-live  {background:#d4edda;color:#155724}
+.tc-warn  {background:#fff3cd;color:#856404}
+.tc-ended {background:#f8d7da;color:#721c24}
+.tc-grey  {background:#e2e3e5;color:#555}
+/* winner box */
+.winner-box{background:#d4edda;border:1px solid #b8dfc5;border-radius:8px;padding:14px 16px;margin-top:10px}
+.winner-box h4{color:#155724;font-size:15px;margin-bottom:8px}
+.winner-box p{font-size:14px;color:#155724;margin-bottom:4px}
+/* contact section */
+.contact-section{background:#eaf4fb;border:1px solid #aed6f1;border-radius:8px;padding:14px 16px;margin-top:10px}
+.contact-section h4{color:#1a5276;font-size:14px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.contact-loading{font-size:13px;color:#888;font-style:italic}
+.contact-email{font-size:15px;font-weight:700;color:#1a5276;background:#fff;border:1px solid #aed6f1;border-radius:6px;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.contact-email a{color:#2980b9;text-decoration:none}
+.contact-email a:hover{text-decoration:underline}
+.copy-btn{background:#2980b9;color:#fff;border:none;border-radius:5px;padding:4px 12px;font-size:12px;cursor:pointer;font-weight:700}
+.copy-btn:hover{background:#1a6699}
+.copied-msg{font-size:12px;color:#27ae60;font-weight:700}
+/* bid list */
+.bid-section{margin-top:12px;border-top:1px solid #eee;padding-top:10px}
+.bid-section-title{font-size:12px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
+.bid-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f5f5f5}
+.bid-row:last-child{border:none}
+.no-bids{font-size:13px;color:#bbb;font-style:italic}
+.empty{text-align:center;color:#bbb;padding:40px;font-size:15px}
+.pending-note{font-size:12px;color:#888;margin-top:8px;text-align:center}
+/* product thumbnail */
+.pcard-thumb{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #eee;margin-bottom:10px}
+.no-img-box{width:80px;height:80px;background:#f0f2f5;border-radius:8px;border:1px solid #eee;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:10px}
+</style>
+</head>
+<body ng-controller="sellerCtrl">
+
+<div class="topbar">
+  <h1>🏪 Seller Dashboard &nbsp;<small style="font-size:13px;opacity:.85">Welcome, {{sellerName}}</small></h1>
+  <button class="logout-btn" ng-click="logout()">Logout</button>
+</div>
+
+<div class="tabs">
+  <div class="tab" ng-class="{active:tab=='add'}"      ng-click="tab='add'">➕ List Product</div>
+  <div class="tab" ng-class="{active:tab=='listings'}" ng-click="tab='listings';loadMyProducts()">📋 My Listings</div>
+  <div class="tab" ng-class="{active:tab=='winners'}"  ng-click="tab='winners';loadWinners()">🏆 Winners & Contact</div>
+</div>
+
+<div class="container">
+
+  <!-- LIST PRODUCT TAB -->
+  <div ng-show="tab=='add'">
+    <div class="form-card">
+      <h2>List a New Product for Auction</h2>
+      <div class="toast t-ok"  ng-if="okMsg">✅ {{okMsg}}</div>
+      <div class="toast t-err" ng-if="errMsg">❌ {{errMsg}}</div>
+
+      <input type="text"   placeholder="Product Name"   ng-model="pform.name">
+      <input type="number" placeholder="Base Price (₹)" ng-model="pform.basePrice">
+
+      <!-- Image upload -->
+      <div ng-if="!pform.imagePreview" class="img-upload-area">
+        <input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+               onchange="angular.element(this).scope().handleImageFile(event)">
+        <div class="img-upload-label">
+          📷 Click or drag to <span>upload product image</span>
+        </div>
+        <div class="img-formats">Supported: PNG, JPG, JPEG, GIF, WEBP</div>
+      </div>
+      <div ng-if="pform.imagePreview" class="img-preview-wrap">
+        <img ng-src="{{pform.imagePreview}}" class="img-preview" alt="preview">
+        <button class="img-remove" ng-click="removeImage()" title="Remove image">✕</button>
+      </div>
+
+      <button class="btn-submit" ng-click="addProduct()">Submit for Admin Approval</button>
+      <p class="pending-note">Your listing will be reviewed by the admin before going live.</p>
+    </div>
+  </div>
+
+  <!-- MY LISTINGS TAB -->
+  <div ng-show="tab=='listings'">
+    <!-- Counters -->
+    <div class="counter-row">
+      <div class="counter-card c-total">
+        <div class="counter-num">{{myProducts.length}}</div>
+        <div class="counter-lbl">Total Listed</div>
+      </div>
+      <div class="counter-card c-live">
+        <div class="counter-num">{{countStatus('approved')}}</div>
+        <div class="counter-lbl">Live Now</div>
+      </div>
+      <div class="counter-card c-pending">
+        <div class="counter-num">{{countStatus('pending')}}</div>
+        <div class="counter-lbl">Pending</div>
+      </div>
+      <div class="counter-card c-closed">
+        <div class="counter-num">{{countStatus('closed')}}</div>
+        <div class="counter-lbl">Closed</div>
+      </div>
+      <div class="counter-card" style="border-top:4px solid #f39c12">
+        <div class="counter-num">{{countStatus('unsold')}}</div>
+        <div class="counter-lbl">Unsold</div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" ng-model="listingQ" placeholder="Search by product name or status…">
+    </div>
+    <div class="result-count" ng-if="listingQ">Showing {{filteredListings().length}} of {{myProducts.length}} products</div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:17px;font-weight:700;color:#333">My Listings</span>
+      <button style="padding:7px 14px;background:#e67e22;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700"
+              ng-click="loadMyProducts()">🔄 Refresh</button>
+    </div>
+
+    <div class="empty" ng-if="filteredListings().length==0">No listings found.</div>
+
+    <div class="pcard" ng-repeat="p in filteredListings()">
+      <img ng-if="p.imageData" ng-src="data:{{p.imageMime}};base64,{{p.imageData}}" class="pcard-thumb" alt="product">
+      <div ng-if="!p.imageData" class="no-img-box">📦</div>
+
+      <div class="pcard-top">
+        <span class="pcard-name">{{p.name}}</span>
+        <span class="badge badge-{{p.status}}">{{p.status|uppercase}}</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-cell"><div class="lbl">Base Price</div><div class="val">₹{{p.basePrice}}</div></div>
+        <div class="info-cell"><div class="lbl">Current Bid</div><div class="val">₹{{p.currentBid}}</div></div>
+        <div class="info-cell" ng-if="p.bidWindowSec"><div class="lbl">Bid Window</div><div class="val">{{p.bidWindowSec}}s</div></div>
+        <div class="info-cell" ng-if="p.bids"><div class="lbl">Total Bids</div><div class="val">{{p.bids.length}}</div></div>
+      </div>
+
+      <div ng-if="p.status=='approved'">
+        <span ng-if="!p.bidEndTime" class="timer-chip tc-grey">⏳ Waiting for first bid</span>
+        <span ng-if="p.bidEndTime" class="timer-chip" ng-class="getTimerClass(p.bidEndTime)" ng-bind="getCountdown(p.bidEndTime)"></span>
+      </div>
+      <div ng-if="p.status=='pending'"   style="font-size:13px;color:#856404;margin-top:6px">⏳ Awaiting admin approval…</div>
+      <div ng-if="p.status=='rejected'"  style="font-size:13px;color:#721c24;margin-top:6px">❌ This listing was rejected by admin.</div>
+      <div ng-if="p.status=='unsold'" style="margin-top:8px">
+        <div style="font-size:13px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:9px 12px;margin-bottom:8px">
+          ⚠️ <b>Unsold</b> — No bids were placed during the auction. You can re-submit this product for a new auction.
+        </div>
+        <button style="padding:8px 16px;background:#e67e22;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px"
+                ng-click="resubmitProduct(p)">🔄 Re-submit for Auction</button>
+      </div>
+
+      <!-- Winner Box -->
+      <div class="winner-box" ng-if="p.status=='closed'">
+        <h4>🏆 Auction Closed</h4>
+        <p ng-if="p.winner && p.winner!='No bids'"><b>Winner:</b> {{p.winner}}</p>
+        <p ng-if="p.winner && p.winner!='No bids'"><b>Final Selling Price:</b> ₹{{p.winnerAmount}}</p>
+        <p ng-if="!p.winner || p.winner=='No bids'" style="color:#856404">No bids were placed for this product.</p>
+
+        <!-- Contact Section inside winner box -->
+        <div class="contact-section" ng-if="p.winner && p.winner!='No bids'">
+          <h4>📧 Contact Winner</h4>
+          <div class="contact-loading" ng-if="p.winnerEmailLoading">Loading winner contact info…</div>
+          <div ng-if="!p.winnerEmailLoading && p.winnerEmail">
+            <div class="contact-email">
+              <span>📬 <b>{{p.winner}}</b></span>
+              <a ng-href="mailto:{{p.winnerEmail}}">{{p.winnerEmail}}</a>
+              <button class="copy-btn" ng-click="copyEmail(p)">Copy</button>
+              <span class="copied-msg" ng-if="p.emailCopied">✓ Copied!</span>
+            </div>
+            <div style="font-size:12px;color:#555;margin-top:8px">
+              💡 Send the product delivery details or shipping info to the winner at the above email address.
+            </div>
+          </div>
+          <div class="contact-loading" ng-if="!p.winnerEmailLoading && !p.winnerEmail">
+            Winner's email not found. They may not have a registered account.
+          </div>
+        </div>
+      </div>
+
+      <!-- Bid History -->
+      <div class="bid-section" ng-if="p.status=='approved'||p.status=='closed'">
+        <div class="bid-section-title">📊 Bid History</div>
+        <div class="no-bids" ng-if="!p.bids||p.bids.length==0">No bids yet.</div>
+        <div class="bid-row" ng-repeat="b in p.bids|orderBy:'-amount'">
+          <span>👤 {{b.bidder}}</span>
+          <span style="font-weight:700;color:#27ae60">₹{{b.amount}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WINNERS & CONTACT TAB -->
+  <div ng-show="tab=='winners'">
+    <!-- Search winners -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" ng-model="winnerQ" placeholder="Search by product name or winner name…">
+    </div>
+    <div class="result-count" ng-if="winnerQ">Showing {{filteredWinners().length}} of {{closedProducts.length}} auctions</div>
+
+    <div style="font-size:17px;font-weight:700;color:#333;margin-bottom:14px">🏆 Winners & Contact Info</div>
+    <div class="empty" ng-if="closedProducts.length==0">No closed auctions yet.</div>
+    <div class="empty" ng-if="closedProducts.length>0 && filteredWinners().length==0">No results match your search.</div>
+
+    <div class="pcard" ng-repeat="p in filteredWinners()">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <img ng-if="p.imageData" ng-src="data:{{p.imageMime}};base64,{{p.imageData}}" class="pcard-thumb" style="margin-bottom:0" alt="product">
+        <div ng-if="!p.imageData" class="no-img-box" style="margin-bottom:0">📦</div>
+        <div>
+          <div class="pcard-name">{{p.name}}</div>
+          <span class="badge badge-closed">CLOSED</span>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-cell"><div class="lbl">Base Price</div><div class="val">₹{{p.basePrice}}</div></div>
+        <div class="info-cell"><div class="lbl">Final Amount</div><div class="val" style="color:#27ae60">₹{{p.winnerAmount}}</div></div>
+        <div class="info-cell"><div class="lbl">Total Bids</div><div class="val">{{p.bids ? p.bids.length : 0}}</div></div>
+      </div>
+
+      <div ng-if="p.winner && p.winner!='No bids'">
+        <div class="winner-box" style="margin-top:0">
+          <h4>🏆 Winner: {{p.winner}}</h4>
+          <p><b>Winning Amount:</b> ₹{{p.winnerAmount}}</p>
+        </div>
+        <div class="contact-section">
+          <h4>📧 Contact Details</h4>
+          <div class="contact-loading" ng-if="p.winnerEmailLoading">Fetching contact info…</div>
+          <div ng-if="!p.winnerEmailLoading && p.winnerEmail">
+            <div class="contact-email">
+              <span>📬 <b>{{p.winner}}</b></span>
+              <a ng-href="mailto:{{p.winnerEmail}}">{{p.winnerEmail}}</a>
+              <button class="copy-btn" ng-click="copyEmail(p)">Copy</button>
+              <span class="copied-msg" ng-if="p.emailCopied">✓ Copied!</span>
+            </div>
+            <div style="font-size:12px;color:#555;margin-top:8px">
+              Click the email above to compose a message, or copy it to share product delivery details.
+            </div>
+          </div>
+          <div class="contact-loading" ng-if="!p.winnerEmailLoading && !p.winnerEmail">
+            Could not find a registered email for this winner.
+          </div>
+        </div>
+      </div>
+
+      <div ng-if="!p.winner || p.winner=='No bids'"
+           style="background:#fff3cd;border:1px solid #ffc107;border-radius:7px;padding:10px 14px;font-size:13px;color:#856404;margin-top:8px">
+        ⚠️ No bids were placed — no winner for this product.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var app = angular.module('auctionApp',[]);
+app.controller('sellerCtrl', function($scope,$http,$interval,$timeout){
+
+  var user = JSON.parse(localStorage.getItem('user')||'{}');
+  $scope.sellerName    = user.name || 'Seller';
+  $scope.tab           = 'add';
+  $scope.pform         = {};
+  $scope.myProducts    = [];
+  $scope.closedProducts= [];
+  $scope.okMsg         = '';
+  $scope.errMsg        = '';
+  $scope.listingQ      = '';
+  $scope.winnerQ       = '';
+
+  $interval(function(){}, 1000);
+
+  /* ── countdown ── */
+  $scope.getCountdown = function(endTime){
+    if(!endTime) return '—';
+    var d = new Date(endTime) - new Date();
+    if(d<=0) return '⏰ Auction Ended';
+    var h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000),s=Math.floor((d%60000)/1000);
+    return (h>0?h+'h ':'')+m+'m '+s+'s remaining';
+  };
+  $scope.getTimerClass = function(endTime){
+    if(!endTime) return 'tc-grey';
+    var d = new Date(endTime)-new Date();
+    if(d<=0) return 'tc-ended';
+    if(d<15000) return 'tc-warn';
+    return 'tc-live';
+  };
+
+  /* ── counters ── */
+  $scope.countStatus = function(s){ return $scope.myProducts.filter(function(p){ return p.status===s; }).length; };
+
+  $scope.resubmitProduct = function(p){
+    if(!confirm('Re-submit "' + p.name + '" for a new auction? It will go back to Pending approval.')) return;
+    $http.post('http://localhost:3000/product/resubmit/' + p._id)
+      .then(function(){ $scope.loadMyProducts(); }, function(err){
+        alert((err.data && err.data.message) ? err.data.message : 'Failed to re-submit.');
+      });
+  };
+
+  /* ── search filters ── */
+  $scope.filteredListings = function(){
+    if(!$scope.listingQ) return $scope.myProducts;
+    var q=$scope.listingQ.toLowerCase();
+    return $scope.myProducts.filter(function(p){
+      return (p.name||'').toLowerCase().includes(q)||(p.status||'').toLowerCase().includes(q);
+    });
+  };
+  $scope.filteredWinners = function(){
+    if(!$scope.winnerQ) return $scope.closedProducts;
+    var q=$scope.winnerQ.toLowerCase();
+    return $scope.closedProducts.filter(function(p){
+      return (p.name||'').toLowerCase().includes(q)||(p.winner||'').toLowerCase().includes(q);
+    });
+  };
+
+  /* ── image handling ── */
+  $scope.handleImageFile = function(event){
+    var file = event.target.files[0];
+    if(!file) return;
+    var allowed = ['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
+    if(!allowed.includes(file.type)){
+      $scope.errMsg = 'Unsupported format. Use PNG, JPG, GIF or WEBP.';
+      $scope.$apply(); return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      $scope.$apply(function(){
+        var dataUrl = e.target.result;
+        // dataUrl = "data:image/png;base64,ABC123..."
+        var parts = dataUrl.split(',');
+        var mime  = parts[0].replace('data:','').replace(';base64','');
+        $scope.pform.imagePreview = dataUrl;
+        $scope.pform.imageBase64  = parts[1];
+        $scope.pform.imageMime    = mime;
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  $scope.removeImage = function(){
+    $scope.pform.imagePreview = null;
+    $scope.pform.imageBase64  = null;
+    $scope.pform.imageMime    = null;
+  };
+
+  /* ── submit product ── */
+  $scope.addProduct = function(){
+    $scope.okMsg=''; $scope.errMsg='';
+    if(!$scope.pform.name||!$scope.pform.name.trim()){ $scope.errMsg='Product name is required.'; return; }
+    if(!$scope.pform.basePrice||$scope.pform.basePrice<=0){ $scope.errMsg='Base price must be greater than 0.'; return; }
+    var payload = {
+      name:      $scope.pform.name.trim(),
+      basePrice: $scope.pform.basePrice,
+      seller:    $scope.sellerName,
+      imageData: $scope.pform.imageBase64 || null,
+      imageMime: $scope.pform.imageMime   || null
+    };
+    $http.post('http://localhost:3000/product/add', payload)
+      .then(function(){
+        $scope.okMsg = '"'+payload.name+'" submitted! Awaiting admin approval.';
+        $scope.pform = {};
+      }, function(){
+        $scope.errMsg = 'Failed to submit. Please try again.';
+      });
+  };
+
+  /* ── load my products + bids ── */
+  $scope.loadMyProducts = function(){
+    $http.get('http://localhost:3000/product/seller/'+encodeURIComponent($scope.sellerName))
+      .then(function(r){
+        $scope.myProducts = r.data;
+        $scope.myProducts.forEach(function(p){
+          if(p.status==='approved'||p.status==='closed'){
+            $http.get('http://localhost:3000/bid/product/'+p._id)
+              .then(function(br){ p.bids=br.data; });
+          } else {
+            p.bids=[];
+          }
+          // Auto-fetch winner email for closed products
+          if(p.status==='closed' && p.winner && p.winner!=='No bids'){
+            fetchWinnerEmail(p);
+          }
+        });
+      });
+  };
+
+  /* ── load closed products for Winners tab ── */
+  $scope.loadWinners = function(){
+    $http.get('http://localhost:3000/product/seller/'+encodeURIComponent($scope.sellerName))
+      .then(function(r){
+        $scope.closedProducts = r.data.filter(function(p){ return p.status==='closed'; });
+        $scope.closedProducts.forEach(function(p){
+          $http.get('http://localhost:3000/bid/product/'+p._id)
+            .then(function(br){ p.bids=br.data; });
+          if(p.winner && p.winner!=='No bids'){
+            fetchWinnerEmail(p);
+          }
+        });
+      });
+  };
+
+  /* ── fetch winner email ── */
+  function fetchWinnerEmail(p){
+    p.winnerEmailLoading = true;
+    p.winnerEmail = null;
+    $http.get('http://localhost:3000/auth/winnerEmail/'+encodeURIComponent(p.winner))
+      .then(function(r){
+        p.winnerEmail = r.data.email;
+        p.winnerEmailLoading = false;
+      }, function(){
+        p.winnerEmail = null;
+        p.winnerEmailLoading = false;
+      });
+  }
+
+  /* ── copy email ── */
+  $scope.copyEmail = function(p){
+    if(!p.winnerEmail) return;
+    navigator.clipboard.writeText(p.winnerEmail).then(function(){
+      p.emailCopied = true;
+      $timeout(function(){ p.emailCopied=false; }, 2000);
+    });
+  };
+
+  /* auto-refresh listings tab every 8s */
+  $interval(function(){
+    if($scope.tab==='listings') $scope.loadMyProducts();
+    if($scope.tab==='winners')  $scope.loadWinners();
+  }, 8000);
+
+  $scope.logout = function(){
+    localStorage.removeItem('user');
+    window.location.href='login.html';
+  };
+});
+</script>
+</body>
+</html>

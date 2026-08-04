@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html ng-app="auctionApp">
+<head>
+<title>Admin Dashboard</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh}
+.topbar{background:#c0392b;color:#fff;padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
+.topbar h1{font-size:19px}
+.logout-btn{background:#fff;color:#c0392b;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-weight:700}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e0e0e0;padding:0 28px}
+.tab{padding:13px 22px;cursor:pointer;font-weight:700;color:#888;border-bottom:3px solid transparent;transition:.15s}
+.tab.active{color:#c0392b;border-bottom-color:#c0392b}
+.container{padding:22px 28px;max-width:1020px;margin:0 auto}
+.section-title{font-size:17px;font-weight:700;color:#333;margin-bottom:14px}
+/* COUNTER CARDS */
+.counter-row{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.counter-card{background:#fff;border-radius:10px;padding:18px 22px;flex:1;min-width:140px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:4px;border-top:4px solid #ccc}
+.counter-card.c-total {border-top-color:#c0392b}
+.counter-card.c-buyers{border-top-color:#2980b9}
+.counter-card.c-sellers{border-top-color:#27ae60}
+.counter-card.c-pending{border-top-color:#f39c12}
+.counter-card.c-live{border-top-color:#27ae60}
+.counter-card.c-closed{border-top-color:#555}
+.counter-num{font-size:32px;font-weight:900;line-height:1;color:#222}
+.counter-lbl{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.4px}
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:10px 16px 10px 40px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border .2s}
+.search-wrap input:focus{border-color:#c0392b}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#bbb;font-size:15px;pointer-events:none}
+.result-count{font-size:12px;color:#888;margin-bottom:12px;font-style:italic}
+/* CARDS */
+.card{background:#fff;border-radius:10px;padding:18px 20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.card-title{font-size:16px;font-weight:700;color:#222}
+.card-actions{display:flex;gap:8px;flex-shrink:0}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:10px}
+.info-cell{background:#f8f9fa;border-radius:6px;padding:7px 10px}
+.info-cell .lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.info-cell .val{font-size:14px;font-weight:700;color:#222}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;gap:4px}
+.badge-pending {background:#fff3cd;color:#856404}
+.badge-approved{background:#d4edda;color:#155724}
+.badge-rejected{background:#f8d7da;color:#721c24}
+.badge-unsold  {background:#ffeeba;color:#856404}
+.badge-buyer   {background:#cce5ff;color:#004085}
+.badge-seller  {background:#d4edda;color:#155724}
+.badge-admin   {background:#f8d7da;color:#721c24}
+.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;transition:opacity .15s}
+.btn:hover{opacity:.83}
+.btn-green{background:#27ae60;color:#fff}
+.btn-red  {background:#e74c3c;color:#fff}
+.btn-blue {background:#2980b9;color:#fff}
+.winner-strip{background:#d4edda;border:1px solid #b8dfc5;border-radius:7px;padding:10px 14px;margin-top:10px;font-size:13px;color:#155724}
+.bid-list{margin-top:10px;border-top:1px solid #eee;padding-top:8px}
+.bid-list-title{font-size:12px;color:#888;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.bid-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #f5f5f5}
+.bid-row:last-child{border:none}
+.no-bids{font-size:13px;color:#bbb;font-style:italic}
+.empty{text-align:center;color:#bbb;padding:40px;font-size:15px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;justify-content:center;align-items:center}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:12px;padding:28px;width:380px;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal h3{margin-bottom:6px;color:#222;font-size:17px}
+.modal .sub{color:#777;font-size:13px;margin-bottom:16px}
+.modal label{font-size:13px;color:#555;font-weight:700;display:block;margin-bottom:5px}
+.modal input{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:14px;font-size:14px}
+.modal-hint{font-size:12px;color:#888;margin:-10px 0 14px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.prod-thumb{width:54px;height:54px;object-fit:cover;border-radius:7px;border:1px solid #eee;margin-right:10px;flex-shrink:0}
+.no-img-icon{width:54px;height:54px;background:#f0f2f5;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;margin-right:10px;flex-shrink:0;border:1px solid #eee}
+</style>
+</head>
+<body ng-controller="adminCtrl">
+
+<!-- Approve Modal -->
+<div class="overlay" ng-class="{show: showModal}">
+  <div class="modal">
+    <h3>✅ Approve Listing</h3>
+    <p class="sub">Product: <b>{{sel.name}}</b> &nbsp;|&nbsp; Base Price: <b>₹{{sel.basePrice}}</b></p>
+    <label>Auction Start Date & Time</label>
+    <input type="datetime-local" ng-model="auctionStartTime" style="margin-bottom:5px">
+    <p class="modal-hint">Leave blank to make it live immediately upon approval.</p>
+    <label>Bid window (seconds)</label>
+    <input type="number" ng-model="winSec" min="5" placeholder="e.g. 30">
+    <p class="modal-hint">If no new bid in this many seconds, the current highest bidder wins.</p>
+    <div class="modal-actions">
+      <button class="btn btn-red"   ng-click="showModal=false">Cancel</button>
+      <button class="btn btn-green" ng-click="confirmApprove()">Confirm Approve</button>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <h1>🛡️ Admin Dashboard</h1>
+  <button class="logout-btn" ng-click="logout()">Logout</button>
+</div>
+
+<div class="tabs">
+  <div class="tab" ng-class="{active:tab=='users'}"    ng-click="tab='users'">👥 Users</div>
+  <div class="tab" ng-class="{active:tab=='products'}" ng-click="tab='products';loadProducts()">📦 Products</div>
+</div>
+
+<div class="container">
+
+  <!-- USERS TAB -->
+  <div ng-show="tab=='users'">
+    <div class="counter-row">
+      <div class="counter-card c-total">
+        <div class="counter-num">{{users.length}}</div>
+        <div class="counter-lbl">Total Users</div>
+      </div>
+      <div class="counter-card c-buyers">
+        <div class="counter-num">{{countByRole('buyer')}}</div>
+        <div class="counter-lbl">Total Buyers</div>
+      </div>
+      <div class="counter-card c-sellers">
+        <div class="counter-num">{{countByRole('seller')}}</div>
+        <div class="counter-lbl">Total Sellers</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" ng-model="userQ" placeholder="Search by name, email or role…">
+    </div>
+    <div class="result-count" ng-if="userQ">
+      Showing {{filteredUsers().length}} of {{users.length}} users
+    </div>
+    <div class="section-title">All Registered Users</div>
+    <div class="empty" ng-if="filteredUsers().length==0">No users found.</div>
+    <div class="card" ng-repeat="u in filteredUsers()">
+      <div class="card-top">
+        <div>
+          <span class="card-title">{{u.name}}</span>
+          <span class="badge badge-{{u.role}}" style="margin-left:8px">{{u.role|uppercase}}</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-red" ng-click="deleteUser(u._id)">🗑 Delete</button>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-cell"><div class="lbl">Email</div><div class="val">{{u.email}}</div></div>
+        <div class="info-cell"><div class="lbl">Role</div><div class="val">{{u.role}}</div></div>
+        <div class="info-cell"><div class="lbl">User ID</div><div class="val" style="font-size:11px">{{u._id}}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS TAB -->
+  <div ng-show="tab=='products'">
+    <div class="counter-row">
+      <div class="counter-card c-total">
+        <div class="counter-num">{{products.length}}</div>
+        <div class="counter-lbl">All Products</div>
+      </div>
+      <div class="counter-card c-pending">
+        <div class="counter-num">{{countByStatus('pending')}}</div>
+        <div class="counter-lbl">Pending</div>
+      </div>
+      <div class="counter-card c-live">
+        <div class="counter-num">{{countByStatus('approved')}}</div>
+        <div class="counter-lbl">Live</div>
+      </div>
+      <div class="counter-card c-closed">
+        <div class="counter-num">{{countByStatus('closed')}}</div>
+        <div class="counter-lbl">Closed</div>
+      </div>
+      <div class="counter-card" style="border-top:4px solid #f39c12">
+        <div class="counter-num">{{countByStatus('unsold')}}</div>
+        <div class="counter-lbl">Unsold</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" ng-model="productQ" placeholder="Search by product name, seller or status…">
+    </div>
+    <div class="result-count" ng-if="productQ">
+      Showing {{filteredProducts().length}} of {{products.length}} products
+    </div>
+    <div class="section-title">
+      All Product Listings
+      <button class="btn btn-blue" style="margin-left:12px;font-size:12px" ng-click="loadProducts()">🔄 Refresh</button>
+    </div>
+    <div class="empty" ng-if="filteredProducts().length==0">No products found.</div>
+
+    <div class="card" ng-repeat="p in filteredProducts()">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;flex:1;min-width:0">
+          <img ng-if="p.imageData" ng-src="data:{{p.imageMime}};base64,{{p.imageData}}" class="prod-thumb" alt="img">
+          <div ng-if="!p.imageData" class="no-img-icon">📦</div>
+          <div>
+            <span class="card-title">{{p.name}}</span>
+            <span class="badge badge-{{p.status}}" style="margin-left:8px" 
+                  ng-if="p.status!=='approved' || !p.auctionStartTime || isStarted(p)">{{p.status|uppercase}}</span>
+            <span class="badge" style="margin-left:8px;background:#8e44ad;color:#fff" 
+                  ng-if="p.status==='approved' && p.auctionStartTime && !isStarted(p)">🕐 SCHEDULED</span>
+            <span class="badge" style="margin-left:8px;background:#27ae60;color:#fff" 
+                  ng-if="p.status==='approved' && isStarted(p)">🔴 LIVE NOW</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-green" ng-if="p.status=='pending'" ng-click="openModal(p)">✅ Approve</button>
+          <button class="btn btn-red"   ng-if="p.status=='pending'" ng-click="rejectProduct(p._id)">❌ Reject</button>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-cell"><div class="lbl">Seller</div><div class="val">{{p.seller}}</div></div>
+        <div class="info-cell"><div class="lbl">Base Price</div><div class="val">₹{{p.basePrice}}</div></div>
+        <div class="info-cell"><div class="lbl">Current Bid</div><div class="val">₹{{p.currentBid}}</div></div>
+        <div class="info-cell" ng-if="p.bidWindowSec"><div class="lbl">Bid Window</div><div class="val">{{p.bidWindowSec}}s</div></div>
+        <div class="info-cell" ng-if="p.auctionStartTime && p.status==='approved'">
+          <div class="lbl" ng-if="!isStarted(p)">⏳ Starts In</div>
+          <div class="lbl" ng-if="isStarted(p)">✅ Started At</div>
+          <div class="val" style="font-size:12px;color:#6c3483" ng-if="!isStarted(p)">{{getStartCountdown(p)}} &nbsp;<small style="color:#aaa">({{p.auctionStartTime | date:'h:mm a, dd MMM'}})</small></div>
+          <div class="val" style="font-size:12px" ng-if="isStarted(p)">{{p.auctionStartTime | date:'dd MMM yyyy, h:mm a'}}</div>
+        </div>
+        <div class="info-cell" ng-if="p.bidEndTime && p.status=='approved'">
+          <div class="lbl">Countdown</div>
+          <div class="val" ng-bind="getCountdown(p.bidEndTime)"></div>
+        </div>
+      </div>
+      <div class="winner-strip" ng-if="p.status=='closed'">
+        🏆 <b>Winner:</b> {{p.winner || 'No bids'}}
+        &nbsp;|&nbsp; <b>Final Amount:</b> ₹{{p.winnerAmount || p.basePrice}}
+      </div>
+      <div class="winner-strip" ng-if="p.status=='unsold'" style="background:#fff3cd;border-color:#ffc107;color:#856404">
+        ♻️ <b>Re-Auction Queue</b> — Auction ran with no bids. Seller can re-submit for a new auction cycle.
+      </div>
+      <div class="bid-list" ng-if="p.status=='approved' || p.status=='closed'">
+        <div class="bid-list-title">📊 Bid History ({{p.bids ? p.bids.length : 0}})</div>
+        <div class="no-bids" ng-if="!p.bids || p.bids.length==0">No bids yet.</div>
+        <div class="bid-row" ng-repeat="b in p.bids | orderBy:'-amount'">
+          <span>👤 {{b.bidder}}</span>
+          <span style="font-weight:700;color:#27ae60">₹{{b.amount}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var app = angular.module('auctionApp',[]);
+app.controller('adminCtrl', function($scope,$http,$interval){
+
+  $scope.tab      = 'users';
+  $scope.users    = [];
+  $scope.products = [];
+  $scope.showModal= false;
+  $scope.sel      = {};
+  $scope.winSec   = 30;
+  $scope.userQ    = '';
+  $scope.productQ = '';
+
+  $interval(function(){}, 1000);
+
+  $scope.getCountdown = function(endTime){
+    if(!endTime) return '—';
+    var d = new Date(endTime) - new Date();
+    if(d<=0) return '⏰ Ended';
+    var m=Math.floor(d/60000), s=Math.floor((d%60000)/1000);
+    return (m>0?m+'m ':'')+s+'s';
+  };
+
+  // Returns true if auction has started (auctionStartTime passed or not set)
+  $scope.isStarted = function(p){
+    if(!p || !p.auctionStartTime) return true;
+    return new Date(p.auctionStartTime).getTime() <= Date.now();
+  };
+
+  // Countdown to auction start time
+  $scope.getStartCountdown = function(p){
+    if(!p || !p.auctionStartTime) return '—';
+    var d = new Date(p.auctionStartTime).getTime() - Date.now();
+    if(d<=0) return 'Starting…';
+    var h=Math.floor(d/3600000), m=Math.floor((d%3600000)/60000), s=Math.floor((d%60000)/1000);
+    if(h>0) return (h<10?'0'+h:h)+'h '+(m<10?'0'+m:m)+'m';
+    if(m>0) return (m<10?'0'+m:m)+'m '+(s<10?'0'+s:s)+'s';
+    return s+'s';
+  };
+
+  $scope.countByRole   = function(r){ return $scope.users.filter(function(u){ return u.role===r; }).length; };
+  $scope.countByStatus = function(s){ return $scope.products.filter(function(p){ return p.status===s; }).length; };
+
+  $scope.filteredUsers = function(){
+    if(!$scope.userQ) return $scope.users;
+    var q=$scope.userQ.toLowerCase();
+    return $scope.users.filter(function(u){
+      return (u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)||(u.role||'').toLowerCase().includes(q);
+    });
+  };
+
+  $scope.filteredProducts = function(){
+    if(!$scope.productQ) return $scope.products;
+    var q=$scope.productQ.toLowerCase();
+    return $scope.products.filter(function(p){
+      return (p.name||'').toLowerCase().includes(q)||(p.seller||'').toLowerCase().includes(q)||(p.status||'').toLowerCase().includes(q);
+    });
+  };
+
+  function loadUsers(){
+    $http.get('http://localhost:3000/auth/allUsers').then(function(r){ $scope.users=r.data; });
+  }
+
+  $scope.loadProducts = function(){
+    $http.get('http://localhost:3000/product/admin/all').then(function(r){
+      $scope.products=r.data;
+      $scope.products.forEach(function(p){
+        if(p.status==='approved'||p.status==='closed'){
+          $http.get('http://localhost:3000/bid/product/'+p._id).then(function(br){ p.bids=br.data; });
+        }
+      });
+    });
+  };
+
+  loadUsers();
+  $scope.loadProducts();
+
+  $interval(function(){
+    if($scope.tab==='products') $scope.loadProducts();
+    $http.post('http://localhost:3000/product/finalize',{});
+  }, 10000);
+
+  $scope.deleteUser = function(id){
+    if(!confirm('Delete this user?')) return;
+    $http.delete('http://localhost:3000/auth/delete/'+id).then(loadUsers);
+  };
+
+  $scope.openModal = function(p){ $scope.sel=p; $scope.winSec=30; $scope.auctionStartTime=''; $scope.showModal=true; };
+  $scope.confirmApprove = function(){
+    var w=parseInt($scope.winSec);
+    if(!w||w<5){ alert('Minimum bid window is 5 seconds.'); return; }
+    var payload = { bidWindowSec: w };
+    if($scope.auctionStartTime){
+      var st = new Date($scope.auctionStartTime);
+      if(isNaN(st.getTime())){ alert('Invalid auction start date/time.'); return; }
+      if(st < new Date()){ alert('Auction start time must be in the future.'); return; }
+      payload.auctionStartTime = st.toISOString();
+    }
+    $http.put('http://localhost:3000/product/approve/'+$scope.sel._id, payload)
+      .then(function(){ $scope.showModal=false; $scope.loadProducts(); });
+  };
+
+  $scope.rejectProduct = function(id){
+    if(!confirm('Reject this product?')) return;
+    $http.put('http://localhost:3000/product/reject/'+id).then($scope.loadProducts);
+  };
+
+  $scope.logout = function(){
+    localStorage.removeItem('user');
+    window.location.href='login.html';
+  };
+});
+</script>
+</body>
+</html>

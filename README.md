@@ -214,7 +214,7 @@ http://localhost:5000
 
 ---
 
-# 📸 Screenshots
+<!-- # 📸 Screenshots
 
 Add screenshots inside a `screenshots` folder.
 
@@ -238,7 +238,7 @@ Then display them like this:
 
 ![Login](screenshots/login.png)
 ```
-
+-->
 ---
 
 # 📦 Dependencies

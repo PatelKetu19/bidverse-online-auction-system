@@ -238,8 +238,9 @@ Then display them like this:
 
 ![Login](screenshots/login.png)
 ```
--->
+
 ---
+-->
 
 # 📦 Dependencies
 

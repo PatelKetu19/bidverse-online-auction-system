@@ -121,13 +121,13 @@ Install the following software:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/bidverse-online-auction-system.git
+git clone https://github.com/PatelKetu19/bidverse-online-auction-system.git
 ```
 
 ### 2. Open Project
 
 ```bash
-cd bidverse-online-auction-system/project_v9/server
+cd bidverse-online-auction-system/server
 ```
 
 ### 3. Install Dependencies
